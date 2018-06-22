@@ -1,0 +1,483 @@
+
+<!-- saved from url=(0066)http://csce.uark.edu/~mgashler/ml/2018_spring/a2/instructions.html -->
+<html class="gr__csce_uark_edu"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+	<style>
+		body {
+			background-color: #203050;
+			background-image:url('../black_fade.png');
+			background-repeat:repeat-x;
+		}
+		.code {
+			margin-left: 30px;
+			color:#000000;
+			background-color:#ffffff;
+		}
+	</style>
+</head>
+<body bgcolor="#d0d0b0" data-gr-c-s-loaded="true"><br><br>
+<table align="center" cellpadding="50" border="1" bgcolor="#e0e0c0" width="720"><tbody><tr><td>
+
+<h1>Backpropagation</h1>
+
+<p>Instructions:</p>
+<ol>
+	<li>Add a member variable named "blame" to your abstract "Layer" class that stores a vector of blame terms.
+		Also, add abstract methods named "backprop", and "update_gradient" as shown in the examples below.<br><br>
+		
+		C++ example:
+<pre class="code">class Layer
+{
+	Vec activation;
+	<font color="red">Vec blame;</font>
+
+public:
+	Layer(size_t inputs, size_t outputs) :
+	  activation(outputs)<font color="red">,
+	  blame(outputs)</font>
+	{
+	}
+
+	virtual ~Layer()
+	{
+	}
+
+	virtual void activate(const Vec&amp; weights, const Vec&amp; x) = 0;
+	<font color="red">virtual void backprop(const Vec&amp; weights, Vec&amp; prevBlame) = 0;
+	virtual void update_gradient(const Vec&amp; x, Vec&amp; gradient) = 0;</font>
+};
+</pre>
+		<br>Java example:
+<pre class="code">abstract class Layer
+{
+	protected Vec activation;
+	<font color="red">protected Vec blame;</font>
+
+	Layer(int inputs, int outputs)
+	{
+		activation = new Vec(outputs);
+		<font color="red">blame = new Vec(outputs);</font>
+	}
+
+	abstract void activate(Vec weights, Vec x);
+	<font color="red">abstract void backprop(Vec weights, Vec prevBlame);
+	abstract void updateGradient(Vec x, Vec gradient);</font>
+}
+</pre>
+		</li><br><br>
+
+	<li>Implement the backprop method in your "LayerLinear" class to compute prevBlame = M<sup>T</sup> * blame.
+		</li><br><br>
+
+	<li>Implement the updateGradient method in your "LayerLinear" class to do:<br>
+		g<sub>b</sub> += blame<br>
+		g<sub>M</sub> += blame * x<br><br>
+		where "*" means outer product, x is the input vector (or activation of the previous layer), g<sub>b</sub> is the part of the gradient vector that will be used to update the bias terms, b, and g<sub>M</sub> is the part of the gradient vector that will be used to update the weights between units, M.
+		(Note that when you do stochastic gradient descent, you will need to fill your gradient vector with zeros before calling updateGradient. When you implement batch gradient descent, in future assignments, you will use it to accumulate the gradients from all of the patters in the batch.)
+		</li><br><br>
+
+	<li>Update your "NeuralNet.predict" method to call "activate" for each layer, passing the relevant portion of the "weights" vector, and feeding the activation of each layer into the next one.
+		It should return the activation of the final layer.
+		(Section 4.3 of <a href="http://csce.uark.edu/~mgashler/lab/ml.pdf">the book</a> talks about this.)
+		</li><br><br>
+
+	<li>Add a method to your "NeuralNet" class named "backProp", which accepts a vector of weights and a vector of target values.
+		It should compute the blame for the output layer as blame = target - activation.
+		Then, it should call "backprop" on each layer, except the first layer, in reverse order, to compute the blame for the preceding layer.
+		</li><br><br>
+
+	<li>Add a method to your "NeuralNet" class named "updateGradient", which calls "updateGradient" in each layer to compute a big gradient vector for the whole neural network.
+		</li><br><br>
+
+	<li>Brush up on <a href="https://en.wikipedia.org/wiki/Finite_difference">finite differencing</a>.
+		Add a method to your NeuralNet class that uses the central difference method to compute its gradient for a given vector, x.
+		Add a unit test that generates random weights and a random input vector, then computes the gradient using both methods, and compares them to make sure they are nearly equal.
+		</li><br><br>
+
+	<li>Add a method to your NeuralNet class named "initWeights" that initializes the weights for each layer with max(0.03, 1.0 / layer.inputCount()) * rand.normal().
+		(The C++ starter kit contains a Random class that can draw values from a Normal distribution. Java has a built-in Random class with a method named nextGaussian.)
+		Unless you have a good reason, there should only ever be ONE random number generator instance in any program.
+		NEVER instantiate a new random number generator in the place where you need the random number.
+		</li><br><br>
+	
+	<li>Add a method to your NeuralNet named "refineWeights" that accepts three vectors (x, y, and weights) and a scalar (learning_rate).
+		This method should use backpropagation to compute the gradient, then update the weights like this:
+		weights += learning_rate * gradient.
+		</li><br><br>
+
+	<li>Test your "refineWeights" method by making a NeuralNet with just one linear layer.
+		Initialize the weights.
+		Randomly draw patterns from some dataset, and call refineWeights with a small learning_rate, like 0.001.
+		After many iterations of refinement, it should converge to the same weights as your implementation of Ordinary Least Squares.
+		</li><br><br>
+
+	<li>Add a new class named LayerTanh.
+		This layer will always output the same number of values as are fed into it as inputs, so its constructor should require only one parameter value.
+		Implement the "activate" method by computing activation[i] = tanh(x[i]) for each i.
+		Implement the "backprop" method to compute the derivative of tanh, prevBlame[i] = blame[i] * (1.0 - (activation[i] * activation[i])) for each i.
+		This layer has no weights, so the updateGradient methods should do nothing.
+		Test that a neural network containing both linear layers and tanh layers still passes your finite differencing test.
+		</li><br><br>
+
+	<li>The table on <a href="https://en.wikipedia.org/wiki/Activation_function">this page</a> shows some other common non-linearities (including tanh) used with neural networks.
+		Implement and test a layer for "leaky rectifier" too.
+		</li><br><br>
+
+	<li>Train an MLP to classify the <a href="http://csce.uark.edu/~mgashler/ml/2018_spring/a2/mnist_zipped.zip">MNIST dataset</a>.
+		(You will need to scale the features to fall between 0 and 1 by dividing them by 256.0.)
+		Train your neural network until you achieve fewer than 350/10000 misclassifications on the test set (while training only on the training set).
+		Report the number of misclassifications at periodic intervals, like this:
+<pre class="code">9243
+622
+509
+422
+406
+430
+337
+</pre>
+		Here is the topology I used to achieve those misclassifications:
+<pre class="code">0) [LayerLinear: 784-&gt;80, Weights=62800]
+1) [LayerTanh: 80-&gt;80, Weights=0]
+2) [LayerLinear: 80-&gt;30, Weights=2430]
+3) [LayerTanh: 30-&gt;30, Weights=0]
+4) [LayerLinear: 30-&gt;10, Weights=310]
+5) [LayerTanh: 10-&gt;10, Weights=0]
+</pre>
+		</li><br><br>
+
+	<li>Zip up your source code. Don't include the data this time, since it is quite large. Also, do not include any generated files. Submit in the same manner as last time.
+		</li><br><br>
+</ol>
+
+<h3>FAQ:</h3>
+<ol>
+
+<!--
+	<li><b>To help me debug my implementation, could you please print your weights and other intermediate values while training on the vowel data?</b>
+		Here is the print out for <a href="vowel_spew1.txt">one layer</a> (8.6MB), and for <a href="vowel_spew2.txt">two layers</a> (22.8MB).
+		In order to enable deterministic results, I initialized the weights in each layer with the values 0.003*r+0.007*c, where r and c are the row and column indexes,
+		and I initialized each element in the bias with 0.001*i, where i is the element index.
+		Also note that my weight matrix may be the transpose of your weight matrix, depending on implementation details.
+		I updated the weights after each pattern presentation, but I presented all of the training patterns in sequential order.
+		I measured the misclassification rate after each epoch.
+		</li><br><br>
+-->
+
+	<li><b>How does one make a collection of layers in C++?</b>
+		The standard template collections (including std::vector&lt;T&gt;) assumed that the type, T, implements a copy constructor and an assignment operator and have a virtual destructor.
+		So, if your Layer class does not satisfy those requirements, then don't do this:
+<pre class="code">class NeuralNet : public SupervisedLearner
+{
+    std::vector&lt;Layer&gt; layers;       <font color="red">// BAD!</font>
+    ...
+}
+</pre>
+
+		An easy solution is to do this instead:
+
+<pre class="code">class NeuralNet : public SupervisedLearner
+{
+    std::vector&lt;Layer*&gt; layers;      <font color="green">// Good</font>
+    ...
+}
+</pre>
+		Pointers already satisfy all of the requirements for using with C++ collections.
+		Also, they are small, which means they will not incur an unnecessarily large cost when the vector decides to reallocate its buffer.
+		However, the responsibility now falls on you to clean up after yourself. Example:
+<pre class="code">class NeuralNet : public SupervisedLearner
+{
+    std::vector&lt;Layer*&gt; layers;
+    ...
+    
+    virtual ~NeuralNet()
+    {
+    	for(size_t i = 0; i &lt; layers.size(); i++)
+    		delete(layers[i]);
+    }
+}
+</pre>
+		</li><br><br>
+
+	<li><b>Q: Can you provide example debug spew to help me debug this thing?</b><br>
+		A: Okay.
+<pre class="code">I made a simple 3-layer neural network with the following topology:
+0) [LayerLinear: 1-&gt;2, Weights=4]
+1) [LayerTanh: 2-&gt;2, Weights=0]
+2) [LayerLinear: 2-&gt;1, Weights=3]
+
+This neural network has a total of 7 weights, which I initialized to:
+[0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3]
+
+I presented the pattern [0.3] -&gt; [0.7] to this
+neural network for training 3 times. I printed lots of
+intermediate values for you to compare against.
+If any value differs by more than 0.0000000001, you have a bug.
+
+
+
+
+
+Presenting the pattern [0.3] -&gt; [0.7] for training...
+
+In LayerLinear::activate
+Input vector: 0.3
+Weights:
+[0.3
+ 0.4
+]
+Bias: 0.1,0.2
+Computed activation: 0.19,0.32
+
+In LayerTanh::activate
+Input vector: 0.19,0.32
+Computed activation: 0.18774620586829,0.30950692121264
+
+In LayerLinear::activate
+Input vector: 0.18774620586829,0.30950692121264
+Weights:
+[0.2,0.3
+]
+Bias: 0.1
+Computed activation: 0.23040131753745
+Computing output layer blame vector
+Target: 0.7
+Prediction: 0.23040131753745
+Blame: 0.46959868246255
+
+In LayerLinear::backprop
+Blame on this layer:0.46959868246255
+Weights:
+[0.2,0.3
+]
+Bias: 0.1
+Computed blame on previous layer:0.09391973649251,0.14087960473877
+
+In LayerTanh::backprop
+Blame on this layer:0.09391973649251,0.14087960473877
+Computed blame on previous layer:0.09060919371693,0.12738410861347
+
+In LayerLinear::updateGradient
+input vector: 0.3
+blame vector: 0.09060919371693,0.12738410861347
+Computed weights gradient:
+[0.027182758115079
+ 0.038215232584042
+]
+Computed bias gradient: 0.09060919371693,0.12738410861347
+
+In LayerTanh::updateGradient
+input vector: 0.19,0.32
+blame vector: 0.09391973649251,0.14087960473877
+
+In LayerLinear::updateGradient
+input vector: 0.18774620586829,0.30950692121264
+blame vector: 0.46959868246255
+Computed weights gradient:
+[0.08816537091309,0.1453440424145
+]
+Computed bias gradient: 0.46959868246255
+
+Updating the weights for layer 0:
+Learning rate: 0.1
+Before Weights:
+[0.3
+ 0.4
+]
+Before Bias: 0.1,0.2
+Updated Weights:
+[0.30271827581151
+ 0.4038215232584
+]
+Updated Bias: 0.10906091937169,0.21273841086135
+
+Updating the weights for layer 1:
+
+Updating the weights for layer 2:
+Learning rate: 0.1
+Before Weights:
+[0.2,0.3
+]
+Before Bias: 0.1
+Updated Weights:
+[0.20881653709131,0.31453440424145
+]
+Updated Bias: 0.14695986824626
+
+
+Presenting the pattern [0.3] -&gt; [0.7] for training...
+
+In LayerLinear::activate
+Input vector: 0.3
+Weights:
+[0.30271827581151
+ 0.4038215232584
+]
+Bias: 0.10906091937169,0.21273841086135
+Computed activation: 0.19987640211515,0.33388486783887
+
+In LayerTanh::activate
+Input vector: 0.19987640211515,0.33388486783887
+Computed activation: 0.19725653444776,0.32200717194654
+
+In LayerLinear::activate
+Input vector: 0.19725653444776,0.32200717194654
+Weights:
+[0.20881653709131,0.31453440424145
+]
+Bias: 0.14695986824626
+Computed activation: 0.28943262867795
+Computing output layer blame vector
+Target: 0.7
+Prediction: 0.28943262867795
+Blame: 0.41056737132205
+
+In LayerLinear::backprop
+Blame on this layer:0.41056737132205
+Weights:
+[0.20881653709131,0.31453440424145
+]
+Bias: 0.14695986824626
+Computed blame on previous layer:0.085733256722152,0.12913756353976
+
+In LayerTanh::backprop
+Blame on this layer:0.085733256722152,0.12913756353976
+Computed blame on previous layer:0.082397363667658,0.11574746794306
+
+In LayerLinear::updateGradient
+input vector: 0.3
+blame vector: 0.082397363667658,0.11574746794306
+Computed weights gradient:
+[0.024719209100297
+ 0.034724240382918
+]
+Computed bias gradient: 0.082397363667658,0.11574746794306
+
+In LayerTanh::updateGradient
+input vector: 0.19987640211515,0.33388486783887
+blame vector: 0.085733256722152,0.12913756353976
+
+In LayerLinear::updateGradient
+input vector: 0.19725653444776,0.32200717194654
+blame vector: 0.41056737132205
+Computed weights gradient:
+[0.080987096824315,0.13220563813294
+]
+Computed bias gradient: 0.41056737132205
+
+Updating the weights for layer 0:
+Learning rate: 0.1
+Before Weights:
+[0.30271827581151
+ 0.4038215232584
+]
+Before Bias: 0.10906091937169,0.21273841086135
+Updated Weights:
+[0.30519019672154
+ 0.4072939472967
+]
+Updated Bias: 0.11730065573846,0.22431315765565
+
+Updating the weights for layer 1:
+
+Updating the weights for layer 2:
+Learning rate: 0.1
+Before Weights:
+[0.20881653709131,0.31453440424145
+]
+Before Bias: 0.14695986824626
+Updated Weights:
+[0.21691524677374,0.32775496805474
+]
+Updated Bias: 0.18801660537846
+
+
+Presenting the pattern [0.3] -&gt; [0.7] for training...
+
+In LayerLinear::activate
+Input vector: 0.3
+Weights:
+[0.30519019672154
+ 0.4072939472967
+]
+Bias: 0.11730065573846,0.22431315765565
+Computed activation: 0.20885771475492,0.34650134184466
+
+In LayerTanh::activate
+Input vector: 0.20885771475492,0.34650134184466
+Computed activation: 0.20587288635293,0.3332691109554
+
+In LayerLinear::activate
+Input vector: 0.20587288635293,0.3332691109554
+Weights:
+[0.21691524677374,0.32775496805474
+]
+Bias: 0.18801660537846
+Computed activation: 0.34190418014055
+Computing output layer blame vector
+Target: 0.7
+Prediction: 0.34190418014055
+Blame: 0.35809581985945
+
+In LayerLinear::backprop
+Blame on this layer:0.35809581985945
+Weights:
+[0.21691524677374,0.32775496805474
+]
+Bias: 0.18801660537846
+Computed blame on previous layer:0.077676443133458,0.11736768399857
+
+In LayerTanh::backprop
+Blame on this layer:0.077676443133458,0.11736768399857
+Computed blame on previous layer:0.074384232316783,0.10433185482471
+
+In LayerLinear::updateGradient
+input vector: 0.3
+blame vector: 0.074384232316783,0.10433185482471
+Computed weights gradient:
+[0.022315269695035
+ 0.031299556447412
+]
+Computed bias gradient: 0.074384232316783,0.10433185482471
+
+In LayerTanh::updateGradient
+input vector: 0.20885771475492,0.34650134184466
+blame vector: 0.077676443133458,0.11736768399857
+
+In LayerLinear::updateGradient
+input vector: 0.20587288635293,0.3332691109554
+blame vector: 0.35809581985945
+Computed weights gradient:
+[0.073722220025384,0.11934227552141
+]
+Computed bias gradient: 0.35809581985945
+
+Updating the weights for layer 0:
+Learning rate: 0.1
+Before Weights:
+[0.30519019672154
+ 0.4072939472967
+]
+Before Bias: 0.11730065573846,0.22431315765565
+Updated Weights:
+[0.30742172369104
+ 0.41042390294144
+]
+Updated Bias: 0.12473907897014,0.23474634313812
+
+Updating the weights for layer 1:
+
+Updating the weights for layer 2:
+Learning rate: 0.1
+Before Weights:
+[0.21691524677374,0.32775496805474
+]
+Before Bias: 0.18801660537846
+Updated Weights:
+[0.22428746877628,0.33968919560688
+]
+Updated Bias: 0.22382618736441
+</pre>
+</li></ol>
+
+</td></tr></tbody></table>
+
+</body></html>

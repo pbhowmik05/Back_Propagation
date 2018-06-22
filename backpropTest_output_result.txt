@@ -1,0 +1,26 @@
+
+1 Iteration 0 : Calculated Misclassification rate = 634 / 10000
+Randomization Completed
+
+2 Iteration 1 : Calculated Misclassification rate = 513 / 10000
+Randomization Completed
+
+3 Iteration 2 : Calculated Misclassification rate = 430 / 10000
+Randomization Completed
+
+4 Iteration 3 : Calculated Misclassification rate = 415 / 10000
+Randomization Completed
+
+5 Iteration 4 : Calculated Misclassification rate = 384 / 10000
+Randomization Completed
+
+6 Iteration 5 : Calculated Misclassification rate = 381 / 10000
+Randomization Completed
+
+7 Iteration 6 : Calculated Misclassification rate = 354 / 10000
+Randomization Completed
+
+8 Iteration 7 : Calculated Misclassification rate = 374 / 10000
+Randomization Completed
+
+9 Iteration 8 : Calculated Misclassification rate = 340 / 10000
